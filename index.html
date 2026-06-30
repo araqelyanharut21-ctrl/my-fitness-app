@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Pro Ultimate</title>
+    <style>
+        :root { --primary: #007bff; --bg: #0f0f1a; --card: #1e1e2f; --item-bg: #2a2a40; --text: #ffffff; --success: #28a745; --accent: #ffcc00; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; max-width: 800px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .lang-switch button { background: #333; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 5px; margin-left: 5px; }
+        .grid-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .cat-btn { background: var(--card); border: 2px solid var(--primary); color: white; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .cat-btn:hover { background: var(--primary); }
+        .workout-box { background: var(--card); padding: 20px; border-radius: 15px; border-top: 5px solid var(--primary); display: none; }
+        .ex-item { background: var(--item-bg); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid var(--accent); }
+        .nav-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-main { background: var(--success); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; flex: 2; font-weight: bold; }
+        .btn-sec { background: #6c757d; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; flex: 1; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 20px; }
+        .day { background: #333; padding: 10px; text-align: center; border-radius: 5px; cursor: pointer; font-size: 0.9em; }
+        .day.done { background: var(--success); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 id="ui-title">Fitness Pro</h1>
+    <div class="lang-switch">
+        <button onclick="changeLang('am')">AM</button>
+        <button onclick="changeLang('en')">EN</button>
+        <button onclick="changeLang('ru')">RU</button>
+    </div>
+</div>
+
+<div class="grid-btns" id="cat-btns"></div>
+
+<div id="workout-area" class="workout-box">
+    <div id="day-counter" style="text-align:center; font-weight:bold; color:var(--accent); margin-bottom:10px;"></div>
+    <div id="ex-list"></div>
+    <div class="nav-btns">
+        <button class="btn-sec" onclick="changeDay(-1)" id="ui-prev">⏪ Նախորդ</button>
+        <button class="btn-main" onclick="changeDay(1)" id="ui-next">Ավարտել ⏩</button>
+    </div>
+</div>
+
+<h2 id="ui-cal-title" style="text-align:center; margin-top:30px;">Օրացույց</h2>
+<div class="calendar" id="calendar"></div>
+
+<script>
+const categoryNames = {
+    chest: { am: "ԿՈՐԾՔ", en: "CHEST", ru: "ГРУДЬ" },
+    legs: { am: "ՈՏՔԵՐ", en: "LEGS", ru: "НОГИ" },
+    back: { am: "ՄԵՋՔ", en: "BACK", ru: "СПИНА" },
+    abs: { am: "ՈՐՈՎԱՅՆ", en: "ABS", ru: "ПРЕСС" },
+    arms: { am: "ՁԵՌՔԵՐ", en: "ARMS", ru: "РУКИ" },
+    shoulders: { am: "ՈՒՍԵՐ", en: "SHOULDERS", ru: "ПЛЕЧИ" }
+};
+
+const data = {
+    chest: [
+        {am: {n:"Դասական հրում", i:"Դրեք ձեռքերը ուսերի լայնությամբ, ոտքերը ուղիղ, իջեք մինչև կրծքով դիպչեք հատակին, ապա հրվեք վեր:"}, en: {n:"Classic Push-ups", i:"Hands shoulder-width, legs straight, lower chest to floor, then push up."}, ru: {n:"Классические отжимания", i:"Руки на ширине плеч, опуститесь грудью к полу, затем вытолкните вверх."}},
+        {am: {n:"Լայն հրում", i:"Ձեռքերը դրեք ուսերից ավելի լայն, իջեք դանդաղ, ապա կտրուկ հրվեք վեր, զգալով կրծքի ձգումը:"}, en: {n:"Wide Push-ups", i:"Hands wider than shoulders, lower slowly, push up explosively, feeling the stretch."}, ru: {n:"Широкие отжимания", i:"Руки шире плеч, медленно опускайтесь, резко выталкивайте, чувствуя растяжку."}},
+        {am: {n:"Շեղանկյուն հրում", i:"Ձեռքերը միացրեք իրար ցուցամատերով, իջեք մինչև կրծքով դիպչեք ձեռքերին, ապա բարձրացեք:"}, en: {n:"Diamond Push-ups", i:"Join hands forming a diamond, lower chest to hands, then push up."}, ru: {n:"Алмазные отжимания", i:"Руки ромбом, опуститесь грудью к рукам, затем поднимитесь."}},
+        {am: {n:"Ոտքերը բարձր հրում", i:"Ոտքերը դրեք աթոռի վրա, ձեռքերը հատակին, իջեք ներքև, հրվեք՝ կենտրոնանալով վերին կրծքի վրա:"}, en: {n:"Decline Push-ups", i:"Feet on a chair, hands on floor, lower and push, targeting upper chest."}, ru: {n:"Отжимания с ног", i:"Ноги на стуле, руки на полу, опускайтесь и жмите, акцент на верх груди."}},
+        {am: {n:"Իջեցված հրում", i:"Ձեռքերը դրեք բարձր հարթակի վրա, ոտքերը գետնին, իջեք մինչև կուրծքը հասնի հարթակին:"}, en: {n:"Incline Push-ups", i:"Hands on elevated surface, legs on floor, lower until chest touches the surface."}, ru: {n:"Отжимания под углом", i:"Руки на возвышении, ноги на полу, опускайтесь до касания грудью."}},
+        {am: {n:"Արագ հրում", i:"Պահեք արագ տեմպ, ձեռքերը ուսերի տակ, կրկնեք շարժումը առանց կանգ առնելու:"}, en: {n:"Fast Push-ups", i:"Maintain fast pace, hands under shoulders, repeat without pause."}, ru: {n:"Быстрые отжимания", i:"Быстрый темп, руки под плечами, повторяйте без пауз."}},
+        {am: {n:"Դանդաղ հրում", i:"Իջեք 3 վայրկյանում, պահեք պաուզա 1 վայրկյան, հետո դանդաղ բարձրացեք:"}, en: {n:"Slow Push-ups", i:"Lower in 3 seconds, hold 1 sec, rise slowly."}, ru: {n:"Медленные отжимания", i:"Опускайтесь 3 секунды, пауза 1 сек, поднимайтесь медленно."}},
+        {am: {n:"Պաուզայով հրում", i:"Իջեք հատակին, սպասեք 2 վայրկյան՝ մկանները լարված պահելով, ապա հրվեք:"}, en: {n:"Paused Push-ups", i:"Lower to floor, hold 2 sec while tensed, then push up."}, ru: {n:"Отжимания с паузой", i:"Опуститесь, задержитесь на 2 сек с напряжением, затем выжмите."}},
+        {am: {n:"Հրում ցատկով", i:"Հրվեք այնքան ուժեղ, որ ձեռքերը պոկվեն հատակից, հետո մեղմ իջեք:"}, en: {n:"Explosive Push-ups", i:"Push so hard hands leave floor, then land softly."}, ru: {n:"Взрывные отжимания", i:"Толкайте так сильно, чтобы руки оторвались, мягкое приземление."}},
+        {am: {n:"Կիսահրումներ", i:"Իջեք միայն կիսով չափ, պահեք լարվածությունը կրծքի մեջ և շարունակեք:"}, en: {n:"Half Push-ups", i:"Lower only halfway, maintain tension in chest and continue."}, ru: {n:"Половинные отжимания", i:"Опускайтесь до половины, держите напряжение в груди, продолжайте."}},
+        {am: {n:"Դինամիկ հրում", i:"Հրվելիս մարմինը տեղափոխեք մի կողմից մյուսը՝ փոխելով հենակետը:"}, en: {n:"Dynamic Push-ups", i:"Shift body side to side while pushing up."}, ru: {n:"Динамические отжимания", i:"Смещайте корпус из стороны в сторону при жиме."}},
+        {am: {n:"Կրծքի ձգում", i:"Պառկեք փորի վրա, ձեռքերը դրեք կողքերին և բարձրացրեք կուրծքը, ձգելով մկանները:"}, en: {n:"Chest Stretch", i:"Lie on stomach, hands to sides, lift chest to stretch."}, ru: {n:"Растяжка груди", i:"Лежа на животе, руки по бокам, поднимайте грудь для растяжки."}},
+        {am: {n:"Ամբողջական հրում", i:"Մաքսիմալ իջեք և լիարժեք ուղղեք արմունկները՝ ամբողջ ամպլիտուդայով:"}, en: {n:"Full Range Push-ups", i:"Go as low as possible and lock elbows fully, using full range."}, ru: {n:"Полные отжимания", i:"Максимальная амплитуда, полная фиксация локтей."}},
+        {am: {n:"Բռունցքներով հրում", i:"Հենվեք բռունցքներին, պահեք դաստակները ուղիղ և կատարեք դասական հրումներ:"}, en: {n:"Fist Push-ups", i:"Lean on fists, keep wrists straight, perform classic push-ups."}, ru: {n:"Отжимания на кулаках", i:"Упор на кулаки, держите запястья прямо, классические отжимания."}},
+        {am: {n:"Առավելագույն հրում", i:"Արեք հնարավորինս շատ կրկնություններ՝ մինչև հոգնածություն:"}, en: {n:"Max Rep Push-ups", i:"Do as many as possible until failure."}, ru: {n:"Максимум отжиманий", i:"Делайте до отказа."}}
+    ],
+    legs: [
+        {am: {n:"Կքանիստներ", i:"Ոտքերը ուսերի լայնությամբ, մեջքը ուղիղ, իջեք մինչև ազդրերը զուգահեռ լինեն հատակին, ապա բարձրացեք:"}, en: {n:"Squats", i:"Feet shoulder-width, back straight, lower until thighs parallel to floor, then rise."}, ru: {n:"Приседания", i:"Ноги на ширине плеч, спина прямая, присед до параллели, подъем."}},
+        {am: {n:"Թոքեր (Lunges)", i:"Մեկ ոտքը առաջ քայլ արեք, երկու ծնկները ծալեք 90 աստիճանով, հետո վերադարձեք:"}, en: {n:"Lunges", i:"Step forward, bend both knees at 90 degrees, then return."}, ru: {n:"Выпады", i:"Шаг вперед, согните оба колена под 90 градусов, вернитесь."}},
+        {am: {n:"Գրապահոցային կքանիստ", i:"Հենվեք պատին, իջեք մինչև ազդրերը հատակին զուգահեռ լինեն և պահեք դիրքը:"}, en: {n:"Wall Sit", i:"Lean on wall, lower until thighs are parallel to floor, and hold position."}, ru: {n:"Стульчик", i:"Спиной к стене, присядьте до параллели и зафиксируйте."}},
+        {am: {n:"Բարձր ծնկներ", i:"Վազք տեղում, ծնկները բարձրացրեք մինչև գոտկատեղի գիծը:"}, en: {n:"High Knees", i:"Run in place, raise knees to waist level."}, ru: {n:"Высокие колени", i:"Бег на месте, колени до уровня пояса."}},
+        {am: {n:"Ցատկով կքանիստ", i:"Կատարեք կքանիստ, ապա հզոր ցատկեք վեր, մեղմ վայրէջք կատարեք կքանիստի մեջ:"}, en: {n:"Jump Squats", i:"Perform squat, jump powerfully, land softly back into squat."}, ru: {n:"Прыжковые приседания", i:"Присед, мощный прыжок, мягкое приземление в присед."}},
+        {am: {n:"Կողային թոքեր", i:"Քայլ կատարեք կողք, ծալեք մեկ ծնկը, մյուս ոտքը ուղիղ պահեք, հետո փոխեք:"}, en: {n:"Side Lunges", i:"Step to side, bend one knee, keep other leg straight, then alternate."}, ru: {n:"Боковые выпады", i:"Шаг в сторону, согните одну ногу, вторую держите прямой, чередуйте."}},
+        {am: {n:"Կամուրջ (Glute Bridge)", i:"Պառկեք մեջքի վրա, ծնկները ծալած, բարձրացրեք կոնքը վեր՝ լարելով հետույքը:"}, en: {n:"Glute Bridge", i:"Lie on back, knees bent, lift hips high, squeeze glutes."}, ru: {n:"Ягодичный мостик", i:"Лежа на спине, согнуты колени, поднимайте таз, напрягая ягодицы."}},
+        {am: {n:"Ոտքի հետ բարձրացում", i:"Կանգնեք, հենվեք պատին, ոտքը ուղիղ հետ տարեք՝ լարելով հետույքը:"}, en: {n:"Leg Raises (Standing)", i:"Stand, hold wall, lift leg straight back, squeeze glutes."}, ru: {n:"Махи ногами", i:"Стоя, опора на стену, мах прямой ногой назад."}},
+        {am: {n:"Կալֆ ռեյզ", i:"Կանգնեք ուղիղ, բարձրացրեք կրունկները մինչև մատների վրա լինելը, դանդաղ իջեք:"}, en: {n:"Calf Raises", i:"Stand straight, lift heels until on toes, lower slowly."}, ru: {n:"Подъем на носки", i:"Стоя прямо, подъем на носки, медленное опускание."}},
+        {am: {n:"Սկատը պաուզայով", i:"Իջեք կքանիստի, պահեք 3 վայրկյան, ապա արագ բարձրացեք:"}, en: {n:"Paused Squats", i:"Lower to squat, hold 3 sec, then rise fast."}, ru: {n:"Присед с паузой", i:"Присед, пауза 3 сек, быстрый подъем."}},
+        {am: {n:"Լայն կքանիստ", i:"Ոտքերը դրեք ուսերից լայն, մատները արտաքին ուղղվածությամբ, իջեք ներքև:"}, en: {n:"Sumo Squats", i:"Wide stance, toes pointed out, lower down."}, ru: {n:"Приседания сумо", i:"Широкая стойка, носки врозь, приседайте вниз."}},
+        {am: {n:"Կոնքի պտույտ", i:"Կանգնեք ուղիղ, կատարեք լայն շրջանաձև շարժումներ կոնքով:"}, en: {n:"Hip Rotations", i:"Stand straight, make wide circular moves with hips."}, ru: {n:"Вращение тазом", i:"Стоя ровно, выполняйте широкие круговые движения тазом."}},
+        {am: {n:"Բուլղարական կքանիստ", i:"Մեկ ոտքը դրեք աթոռի վրա, մյուս ոտքով կքանիստ արեք:"}, en: {n:"Bulgarian Split Squat", i:"One foot on chair, squat with the other leg."}, ru: {n:"Болгарский сплит-присед", i:"Одна нога на стуле, приседайте на второй."}},
+        {am: {n:"Արագ ոտքեր", i:"Վազեք տեղում՝ շատ արագ և կարճ քայլերով:"}, en: {n:"Fast Feet", i:"Run in place with very fast, short steps."}, ru: {n:"Быстрые ноги", i:"Бег на месте очень быстрыми, короткими шагами."}},
+        {am: {n:"Կքանիստ ցատկով (Burpees)", i:"Կատարեք կքանիստ, ոտքերը հետ տարեք պլանկի, վերադարձեք և ցատկեք:"}, en: {n:"Burpees", i:"Squat, jump legs back to plank, return and jump."}, ru: {n:"Берпи", i:"Присед, ноги назад в планку, возврат и прыжок."}}
+    ],
+    back: [
+        {am: {n:"Superman", i:"Պառկեք փորի վրա, ձեռքերը և ոտքերը միաժամանակ բարձրացրեք վեր, պահեք 2 վայրկյան:"}, en: {n:"Superman", i:"Lie on stomach, lift arms and legs simultaneously, hold 2 sec."}, ru: {n:"Супермен", i:"Лежа на животе, поднимите руки и ноги одновременно, держите 2 сек."}},
+        {am: {n:"Թիակների սեղմում", i:"Կանգնեք ուղիղ, ձեռքերը հետ տարեք և թիակները սեղմեք իրար:"}, en: {n:"Scapular Retraction", i:"Stand straight, pull arms back, squeeze shoulder blades."}, ru: {n:"Сведение лопаток", i:"Стоя, отведите руки назад, сведите лопатки."}},
+        {am: {n:"Կամրջակ", i:"Կանգնեք, ձեռքերը դրեք գոտկատեղին, դանդաղ ետ թեքվեք՝ ձգելով մեջքը:"}, en: {n:"Back Arch", i:"Stand, hands on waist, lean back slowly to stretch back."}, ru: {n:"Прогиб спины", i:"Стоя, руки на поясе, медленно прогнитесь назад."}},
+        {am: {n:"Կատվի ձգում", i:"Չորեքթաթ դիրք, մեջքը կլորացրեք վեր, ապա թեքեք ներքև՝ գլուխը բարձրացնելով:"}, en: {n:"Cat-Cow Stretch", i:"All fours, arch back up, then dip down with head up."}, ru: {n:"Кошка-корова", i:"На четвереньках, выгните спину вверх, затем прогнитесь вниз."}},
+        {am: {n:"Ձեռքերի հետ քաշում", i:"Թեքվեք առաջ, ձեռքերը տարեք կողքեր՝ թիակները աշխատեցնելով:"}, en: {n:"Reverse Fly (No weight)", i:"Bend forward, raise arms to sides, working shoulder blades."}, ru: {n:"Обратные разводки", i:"Наклон вперед, разведите руки в стороны, работая лопатками."}},
+        {am: {n:"Մարմնի պտույտ", i:"Ոտքերը տեղում, պտտեք իրանը աջ ու ձախ՝ ձեռքերը ազատ թողնելով:"}, en: {n:"Torso Twists", i:"Feet fixed, twist torso left and right, arms relaxed."}, ru: {n:"Скручивания корпуса", i:"Ноги на месте, повороты корпуса влево-вправо, руки свободны."}},
+        {am: {n:"Աջ և ձախ ձգում", i:"Կանգնած, ձեռքը գլխի վրայով ձգեք դեպի կողք՝ կողային մկանները ձգելով:"}, en: {n:"Side Bends", i:"Stand, reach arm over head to side to stretch lats."}, ru: {n:"Наклоны в стороны", i:"Стоя, тяните руку над головой вбок для растяжки."}},
+        {am: {n:"Կանգնած ձգում", i:"Ձեռքերը բարձրացրեք վեր և ձգվեք, ասես ցանկանում եք հասնել առաստաղին:"}, en: {n:"Overhead Reach", i:"Raise arms high and stretch as if reaching the ceiling."}, ru: {n:"Потягивание вверх", i:"Руки вверх и тянитесь, как будто к потолку."}},
+        {am: {n:"Մեջքի շրջանաձև շարժում", i:"Կատարեք դանդաղ, լայն շրջանաձև շարժումներ՝ մեջքի ստորին հատվածը ձգելով:"}, en: {n:"Back Circles", i:"Perform slow, wide circular movements, stretching lower back."}, ru: {n:"Круговые движения спиной", i:"Медленно, широко, растягивая поясницу."}},
+        {am: {n:"Ճակատային ձգում", i:"Կանգնած՝ թեքվեք առաջ և ձեռքերով ձգվեք դեպի ոտքերը:"}, en: {n:"Forward Fold", i:"Stand, fold forward and reach for your feet."}, ru: {n:"Наклон вперед", i:"Стоя, наклонитесь вперед, стараясь достать пальцами ног."}},
+        {am: {n:"Կրծքավանդակի բացում", i:"Ձեռքերը կապեք հետևում և ձգեք կուրծքը առաջ՝ թիակները սեղմած:"}, en: {n:"Chest Opener", i:"Clasp hands behind, push chest forward, squeeze blades."}, ru: {n:"Раскрытие груди", i:"Сцепите руки за спиной, толкайте грудь вперед."}},
+        {am: {n:"Պառկած ձգում", i:"Պառկեք, ծնկները գրկեք և ձգեք դեպի կուրծքը:"}, en: {n:"Knee to Chest", i:"Lie down, hug knees and pull to chest."}, ru: {n:"Колени к груди", i:"Лежа, прижмите колени к груди."}},
+        {am: {n:"Ձող (Plank)", i:"Հենվեք արմունկներին, պահեք մարմինը ուղիղ, մի թողեք գոտկատեղը իջնի:"}, en: {n:"Plank", i:"Rest on elbows, keep body straight, don't let hips sag."}, ru: {n:"Планка", i:"Опора на локти, тело прямо, не опускайте таз."}},
+        {am: {n:"Բարձրացումներ չորեքթաթ", i:"Չորեքթաթ, միաժամանակ բարձրացրեք հակառակ ձեռքը և ոտքը:"}, en: {n:"Bird-Dog", i:"All fours, lift opposite arm and leg simultaneously."}, ru: {n:"Птица-собака", i:"На четвереньках, поднимайте противоположные руку и ногу."}},
+        {am: {n:"Մեջքի առավելագույն ձգում", i:"Նստեք կրունկների վրա, ձեռքերը տարեք առաջ՝ հատակին:"}, en: {n:"Full Back Stretch", i:"Sit on heels, reach arms forward on the floor."}, ru: {n:"Полная растяжка спины", i:"Сидя на пятках, тяните руки вперед по полу."}}
+    ],
+    abs: [
+        {am: {n:"Կռանիստներ (Crunches)", i:"Պառկեք, ծնկները ծալած, ձեռքերը գլխին, բարձրացրեք ուսերը հատակից:"}, en: {n:"Crunches", i:"Lie, knees bent, hands to head, lift shoulders off floor."}, ru: {n:"Скручивания", i:"Лежа, колени согнуты, руки у головы, отрывайте плечи."}},
+        {am: {n:"Ձող (Plank)", i:"Արմունկներին հենված պահեք մարմինը ուղիղ՝ մկանները լարված:"}, en: {n:"Plank", i:"On elbows, keep body straight with muscles tense."}, ru: {n:"Планка", i:"На локтях, держите тело прямо, мышцы в напряжении."}},
+        {am: {n:"Հեծանիվ", i:"Պառկած, ծունկը ձգեք դեպի հակառակ արմունկը՝ հաջորդաբար:"}, en: {n:"Bicycle Crunches", i:"Lie, reach knee to opposite elbow, alternating."}, ru: {n:"Велосипед", i:"Лежа, колено к противоположному локтю, чередуя."}},
+        {am: {n:"Ոտքերի բարձրացում", i:"Պառկած մեջքին, ոտքերը ուղիղ բարձրացրեք մինչև 90 աստիճան:"}, en: {n:"Leg Raises", i:"Lie on back, raise legs straight up to 90 degrees."}, ru: {n:"Подъем ног", i:"Лежа, поднимайте прямые ноги до 90 градусов."}},
+        {am: {n:"Լեռնագնաց", i:"Պլանկի դիրք, հաջորդաբար ծնկները քաշեք դեպի կուրծքը՝ արագ:"}, en: {n:"Mountain Climbers", i:"Plank position, alternate knees to chest fast."}, ru: {n:"Скалолаз", i:"Планка, колени к груди поочередно, быстро."}},
+        {am: {n:"Ռուսական պտույտներ", i:"Նստեք, ոտքերը թեթև բարձրացրեք, պտտեք իրանը ձախ և աջ:"}, en: {n:"Russian Twists", i:"Sit, lift legs slightly, twist torso left and right."}, ru: {n:"Русские скручивания", i:"Сидя, ноги приподняты, повороты корпуса."}},
+        {am: {n:"Կրունկների հպում", i:"Պառկած, կուրծքը փոքր բարձրացրեք և ձեռքերով հպվեք կրունկներին:"}, en: {n:"Heel Touches", i:"Lie, lift chest slightly, reach hands to heels."}, ru: {n:"Касания пяток", i:"Лежа, приподнимите корпус, касайтесь пяток руками."}},
+        {am: {n:"Պլանկի ցատկեր", i:"Պլանկի դիրքից ոտքերը կողք ցատկեք, ապա վերադարձրեք:"}, en: {n:"Plank Jacks", i:"From plank, jump legs out, then back in."}, ru: {n:"Планка с прыжками", i:"Из планки прыжки ногами в стороны и назад."}},
+        {am: {n:"V-ձև վարժություն", i:"Պառկած, ձեռքերը և ոտքերը միաժամանակ բարձրացրեք՝ մարմինը V-ի վերածելով:"}, en: {n:"V-Ups", i:"Lie, lift arms and legs together to form a V shape."}, ru: {n:"V-скручивания", i:"Лежа, поднимайте руки и ноги вместе, форма V."}},
+        {am: {n:"Հակադարձ կռանիստ", i:"Պառկած, ծնկները գրկեք և ձգեք դեպի կուրծքը, կոնքը մի փոքր պոկելով հատակից:"}, en: {n:"Reverse Crunches", i:"Lie, hug knees to chest, lifting hips off floor."}, ru: {n:"Обратные скручивания", i:"Лежа, прижимайте колени к груди, отрывая таз."}},
+        {am: {n:"Պլանկ դեպի հրում", i:"Արմունկներից անցեք ձեռքերի հենարանի և հակառակը:"}, en: {n:"Plank to Push-up", i:"Transition from elbows to hands, then back."}, ru: {n:"Планка в отжимание", i:"Переход с локтей на руки и обратно."}},
+        {am: {n:"Լոդոկա (Hollow Body)", i:"Պառկած մեջքին, ոտքերը և գլուխը բարձրացրեք, պահեք անշարժ:"}, en: {n:"Hollow Body Hold", i:"Lie on back, lift legs and head, hold steady."}, ru: {n:"Лодочка", i:"Лежа, приподнимите ноги и голову, держите статику."}},
+        {am: {n:"Կողային պլանկ", i:"Հենվեք մի արմունկին, պահեք մարմինը կողքով ուղիղ:"}, en: {n:"Side Plank", i:"Rest on one elbow, keep body straight on side."}, ru: {n:"Боковая планка", i:"Опора на локоть, тело прямо на боку."}},
+        {am: {n:"Որովայնի ձգում", i:"Պառկած, ձեռքերը տարեք գլխից վեր, ոտքերը՝ ներքև:"}, en: {n:"Abs Stretch", i:"Lie, reach arms above head, legs down."}, ru: {n:"Растяжка пресса", i:"Лежа, руки за голову, тянитесь ногами вниз."}},
+        {am: {n:"Առավելագույն րոպեներ", i:"Պահեք պլանկը մինչև հոգնելը՝ ձգված պահելով որովայնը:"}, en: {n:"Max Plank", i:"Hold plank until fatigue, keeping core tight."}, ru: {n:"Максимум планки", i:"Держите до отказа, напрягая пресс."}}
+    ],
+    arms: [
+        {am: {n:"Բազկի պտույտներ", i:"Ձեռքերը տարեք կողքեր, փոքր շրջաններ կատարեք, ձգելով մկանները:"}, en: {n:"Arm Circles", i:"Arms to sides, make small circles, flexing muscles."}, ru: {n:"Круги руками", i:"Руки в стороны, мелкие круги, напрягая мышцы."}},
+        {am: {n:"Տրիցեպսի հրումներ", i:"Հենվեք աթոռին, ոտքերը ուղիղ, իջեք ձեռքերով մինչև 90 աստիճան:"}, en: {n:"Tricep Dips", i:"Lean on chair, legs straight, lower with arms to 90 degrees."}, ru: {n:"Отжимания на трицепс", i:"Опора на стул, ноги прямо, опускайтесь на руках до 90 градусов."}},
+        {am: {n:"Բազկի իմիտացիա", i:"Ձեռքերը ծալեք, իբր ծանրություն ունեք, լարեք բազկի մկանները:"}, en: {n:"Bicep Curls (No weight)", i:"Bend arms as if holding weight, squeeze biceps."}, ru: {n:"Сгибания на бицепс", i:"Сгибайте руки, имитируя вес, напрягая бицепс."}},
+        {am: {n:"Շեղանկյուն հրում", i:"Ձեռքերը ռոմբով, իջեք դանդաղ, զգացեք տրիցեպսի աշխատանքը:"}, en: {n:"Diamond Push-ups", i:"Diamond hand position, lower slowly, feel triceps work."}, ru: {n:"Алмазные отжимания", i:"Руки ромбом, медленно вниз, чувствуйте трицепс."}},
+        {am: {n:"Պլանկի հպումներ", i:"Պլանկի դիրք, աջ ձեռքով հպվեք ձախ ուսին, հետո հակառակը:"}, en: {n:"Plank Taps", i:"Plank position, right hand to left shoulder, then alternate."}, ru: {n:"Касания плеч в планке", i:"Планка, касайтесь правой рукой левого плеча, чередуя."}},
+        {am: {n:"Բռունցքներով պայքար", i:"Ձեռքերը ծալած, արագ հարվածներ կատարեք օդ՝ լարելով ձեռքերը:"}, en: {n:"Boxing Air", i:"Arms bent, punch air fast, keeping arms tense."}, ru: {n:"Бой с тенью", i:"Руки согнуты, быстрые удары в воздух, руки напряжены."}},
+        {am: {n:"Ձեռքերի վեր ձգում", i:"Կանգնեք, ձեռքերը կապեք և հզոր ձգվեք վեր՝ ուղղելով արմունկները:"}, en: {n:"Overhead Reach", i:"Stand, clasp hands, reach powerfully up, straightening elbows."}, ru: {n:"Потягивание вверх", i:"Стоя, сцепите руки, тянитесь вверх, выпрямляя локти."}},
+        {am: {n:"Տրիցեպսի ձգում", i:"Ձեռքը դրեք գլխի հետև, մյուսով հրեք արմունկը՝ ձգելով տրիցեպսը:"}, en: {n:"Tricep Stretch", i:"Hand behind head, push elbow with other hand to stretch tricep."}, ru: {n:"Растяжка трицепса", i:"Рука за головой, давите другой рукой на локоть."}},
+        {am: {n:"Պատի հրումներ", i:"Դեմքով կանգնեք պատին, հրվեք՝ կենտրոնանալով ձեռքերի վրա:"}, en: {n:"Wall Push-ups", i:"Face the wall, push, focusing on arms."}, ru: {n:"Отжимания от стены", i:"Лицом к стене, отжимайтесь, акцент на руки."}},
+        {am: {n:"Ծովախեցգետնի քայլ", i:"Հենվեք ձեռքերին և ոտքերին, քայլեք հետ՝ կրծքավանդակը դեպի վեր:"}, en: {n:"Crab Walk", i:"Support on hands and feet, walk backward, chest up."}, ru: {n:"Походка краба", i:"Опора на руки и ноги, идите назад, грудь вверх."}},
+        {am: {n:"Որդի քայլք", i:"Կանգնած՝ թեքվեք, ձեռքերով քայլեք մինչև պլանկի դիրք և հետ:"}, en: {n:"Inchworms", i:"Stand, bend, walk hands to plank position and back."}, ru: {n:"Гусеница", i:"Стоя, наклон, идите руками в планку и обратно."}},
+        {am: {n:"Ձեռքի ափերի հպում", i:"Կանգնած, արագ հպեք ձեռքերը ափերով՝ առաջ և վեր:"}, en: {n:"Hand Taps", i:"Stand, tap palms together fast in front and up."}, ru: {n:"Касания ладоней", i:"Стоя, быстро хлопайте ладонями перед собой и над головой."}},
+        {am: {n:"Կողային պլանկ", i:"Կողային պլանկի ժամանակ վերին ձեռքը բարձրացրեք վեր՝ լարելով:"}, en: {n:"Side Plank Raise", i:"Side plank, raise top arm up, keeping it tense."}, ru: {n:"Боковая планка с подъемом", i:"Боковая планка, поднимите верхнюю руку, напрягая."}},
+        {am: {n:"Տրիցեպսի հպումներ հատակին", i:"Պառկած, ոտքերը գետնին, բարձրացրեք մարմինը միայն ձեռքերի ուժով:"}, en: {n:"Floor Dips", i:"Lie, feet on floor, lift body using only arm strength."}, ru: {n:"Отжимания на полу", i:"Лежа, ноги на полу, поднимайте тело только на руках."}},
+        {am: {n:"Առավելագույն հրումներ", i:"Ձեռքերի մկանները լարած, հրվեք մինչև հոգնելը:"}, en: {n:"Max Push-ups", i:"With arm muscles tense, push until exhaustion."}, ru: {n:"Максимум отжиманий", i:"С напряжением в руках до отказа."}}
+    ],
+    shoulders: [
+        {am: {n:"Պայքարի հրումներ", i:"Հետույքը վեր բարձրացրեք (V դիրք), իջեք գլխով դեպի հատակը:"}, en: {n:"Pike Push-ups", i:"Hips high (V shape), lower head to floor."}, ru: {n:"Отжимания домиком", i:"Таз высоко, опускайте голову к полу."}},
+        {am: {n:"Ուսերի հպումներ", i:"Պլանկի դիրք, ձեռքով հպվեք հակառակ ուսին, մարմինը չթափահարեք:"}, en: {n:"Shoulder Taps", i:"Plank position, touch opposite shoulder, keep body still."}, ru: {n:"Касания плеч", i:"Планка, касайтесь противоположного плеча, тело неподвижно."}},
+        {am: {n:"Ձեռքերի շրջաններ", i:"Ուղիղ ձեռքերը կողք, կատարեք փոքր, ինտենսիվ շրջաններ:"}, en: {n:"Shoulder Circles", i:"Straight arms to side, do small, intense circles."}, ru: {n:"Круги плечами", i:"Прямые руки в стороны, интенсивные мелкие круги."}},
+        {am: {n:"Կողային մախեր", i:"Ձեռքերը բարձրացրեք կողք՝ մինչև ուսերի գիծ, իջեք դանդաղ:"}, en: {n:"Lateral Raises", i:"Raise arms to sides until shoulder height, lower slowly."}, ru: {n:"Махи в стороны", i:"Поднимайте руки через стороны до плеч, медленно вниз."}},
+        {am: {n:"Առաջային մախեր", i:"Ձեռքերը բարձրացրեք ուղիղ առաջ՝ մինչև ուսերի գիծ:"}, en: {n:"Front Raises", i:"Raise arms straight forward until shoulder height."}, ru: {n:"Махи вперед", i:"Поднимайте руки прямо перед собой до уровня плеч."}},
+        {am: {n:"Ուսերի ձգում (Պատ)", i:"Ձեռքերը դրեք պատին և սահեցրեք վեր ու վար՝ ուսերը ձգելով:"}, en: {n:"Wall Angels", i:"Place arms on wall, slide up and down to stretch shoulders."}, ru: {n:"Ангелы у стены", i:"Руки на стену, двигайте вверх-вниз для растяжки плеч."}},
+        {am: {n:"Պլանկից դեպի պայքար", i:"Պլանկից կոնքը բարձրացրեք վեր, ստանալով պայքարի դիրք և հետ:"}, en: {n:"Plank to Pike", i:"From plank, lift hips to pike position and back."}, ru: {n:"Планка в домик", i:"Из планки поднимите таз в домик и обратно."}},
+        {am: {n:"Արջի քայլք", i:"Չորեքթաթ դիրքից կտրեք ծնկները հատակից և քայլեք:"}, en: {n:"Bear Crawl", i:"From all fours, lift knees off floor and walk."}, ru: {n:"Медвежья походка", i:"На четвереньках, оторвите колени от пола и идите."}},
+        {am: {n:"Քայլք դեպի հրում", i:"Կանգնած՝ թեքվեք, ձեռքերով քայլեք մինչև պլանկի դիրք և հետ:"}, en: {n:"Walkout", i:"Stand, bend, walk hands to plank position and back."}, ru: {n:"Выход в планку", i:"Стоя, наклон, идите руками в планку и обратно."}},
+        {am: {n:"Հակադարձ պլանկ", i:"Պառկած մեջքին, հենվեք ձեռքերին և բարձրացրեք մարմինը ուղիղ:"}, en: {n:"Reverse Plank", i:"Lie on back, support on hands, lift body straight."}, ru: {n:"Обратная планка", i:"Лежа на спине, опора на руки, поднимите прямое тело."}},
+        {am: {n:"Ուսերի շրջան", i:"Կատարեք լայն շրջանաձև շարժումներ ուսերով՝ առաջ և հետ:"}, en: {n:"Shoulder Rotations", i:"Perform wide circular movements with shoulders, forward and back."}, ru: {n:"Вращение плечами", i:"Широкие круговые движения плечами, вперед и назад."}},
+        {am: {n:"Թիակների աշխատանք", i:"Ձեռքերը կախված, միայն ուսերը բարձրացրեք ականջներին և իջեք:"}, en: {n:"Scapular Shrugs", i:"Arms hanging, lift only shoulders to ears and lower."}, ru: {n:"Шраги лопатками", i:"Руки опущены, поднимайте только плечи к ушам и вниз."}},
+        {am: {n:"Իջեցված պայքար", i:"Ոտքերը դրեք բարձր աթոռի վրա, ձեռքերը հատակին, կատարեք պայքար:"}, en: {n:"Incline Pike", i:"Feet on elevated chair, hands on floor, do pike pushups."}, ru: {n:"Отжимания домиком с ног", i:"Ноги на стуле, руки на полу, делайте отжимания домиком."}},
+        {am: {n:"Ուսերի ձգում (Խաչ)", i:"Ձեռքը ձգեք կրծքի վրայով, մյուսով սեղմեք՝ ուսը ձգելով:"}, en: {n:"Shoulder Stretch", i:"Reach arm across chest, press with other hand to stretch."}, ru: {n:"Растяжка плеч", i:"Рука поперек груди, давите другой рукой для растяжки."}},
+        {am: {n:"Առավելագույն պայքար", i:"Կատարեք պայքարի հրումներ մինչև հոգնածություն:"}, en: {n:"Max Pike", i:"Do pike push-ups until fatigue."}, ru: {n:"Максимум отжиманий домиком", i:"Делайте отжимания домиком до отказа."}}
+    ]
+};
+
+let lang = 'am';
+let currentCat = 'chest';
+
+function changeLang(l) { lang = l; render(); }
+
+function render() {
+    const cont = document.getElementById('cat-btns');
+    cont.innerHTML = '';
+    Object.keys(data).forEach(c => {
+        let btn = document.createElement('button');
+        btn.className = 'cat-btn';
+        btn.innerText = categoryNames[c][lang];
+        btn.onclick = () => { currentCat = c; render(); };
+        cont.appendChild(btn);
+    });
+
+    document.getElementById('ui-title').innerText = lang === 'am' ? 'Ֆիթնես Պրո' : 'Fitness Pro';
+    document.getElementById('ui-prev').innerText = lang === 'am' ? '⏪ Նախորդ' : '⏪ Previous';
+    document.getElementById('ui-next').innerText = lang === 'am' ? 'Ավարտել ⏩' : 'Complete ⏩';
+    document.getElementById('ui-cal-title').innerText = lang === 'am' ? 'Օրացույց' : 'Calendar';
+
+    document.getElementById('workout-area').style.display = 'block';
+    let day = parseInt(localStorage.getItem('day_'+currentCat)) || 1;
+    document.getElementById('day-counter').innerText = `${lang === 'am' ? 'Օր' : 'Day'} ${day}`;
+    
+    const list = document.getElementById('ex-list');
+    list.innerHTML = '';
+    data[currentCat].forEach(ex => {
+        let div = document.createElement('div');
+        div.className = 'ex-item';
+        div.innerHTML = `<h3>${ex[lang].n}</h3><p style="color:var(--accent)">${10+day} ${lang==='am'?'կրկնություն':'reps'}</p><p>${ex[lang].i}</p>`;
+        list.appendChild(div);
+    });
+
+    renderCal();
+}
+
+function changeDay(delta) {
+    let day = parseInt(localStorage.getItem('day_'+currentCat)) || 1;
+    let newDay = Math.max(1, day + delta);
+    localStorage.setItem('day_'+currentCat, newDay);
+    render();
+}
+
+function renderCal() {
+    const cal = document.getElementById('calendar');
+    cal.innerHTML = '';
+    let day = parseInt(localStorage.getItem('day_'+currentCat)) || 1;
+    let limit = Math.max(35, day + 7);
+    for(let i=1; i<=limit; i++) {
+        let d = document.createElement('div');
+        d.className = 'day';
+        d.innerText = i;
+        if(i <= day) d.classList.add('done');
+        cal.appendChild(d);
+    }
+}
+
+render();
+</script>
+</body>
+</html>
+
